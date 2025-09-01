@@ -17,6 +17,10 @@ namespace TheCodex
         private AbilityTabType currentTab = AbilityTabType.Primary;
         private readonly string[] tabNames = { "Primary", "Secondary", "Utility", "Movement", "Core", "Augments" };
 
+        // Search functionality
+        private string searchText = "";
+        private readonly Dictionary<AbilityTabType, string> searchTexts = new Dictionary<AbilityTabType, string>();
+
         // Cache the full ability lists to prevent them from being overwritten
         private static readonly Dictionary<PlayerAbilityType, List<AbilityTree>> cachedFullAbilityLists = new Dictionary<PlayerAbilityType, List<AbilityTree>>();
         private static readonly List<AugmentTree> cachedFullCoreList = new List<AugmentTree>();
@@ -42,6 +46,7 @@ namespace TheCodex
                 if (showDropdown && !hasInitializedCache)
                 {
                     InitializeAbilityCache();
+                    InitializeSearchTexts();
                 }
             }
 
@@ -49,6 +54,18 @@ namespace TheCodex
             if (showDropdown)
             {
                 SetCursorState(true);
+            }
+        }
+
+        private void InitializeSearchTexts()
+        {
+            // Initialize search text dictionary for each tab
+            foreach (AbilityTabType tabType in Enum.GetValues(typeof(AbilityTabType)))
+            {
+                if (!searchTexts.ContainsKey(tabType))
+                {
+                    searchTexts[tabType] = "";
+                }
             }
         }
 
@@ -156,6 +173,11 @@ namespace TheCodex
 
             GUILayout.Space(10);
 
+            // Draw search bar
+            DrawSearchBar();
+
+            GUILayout.Space(5);
+
             // Draw content based on current tab
             scrollPosition = GUILayout.BeginScrollView(scrollPosition);
 
@@ -187,6 +209,47 @@ namespace TheCodex
             GUI.DragWindow();
         }
 
+        private void DrawSearchBar()
+        {
+            GUIStyle searchStyle = new GUIStyle(GUI.skin.textField);
+            searchStyle.normal.background = MakeTexture(2, 2, new Color(0.15f, 0.15f, 0.15f, 1f));
+            searchStyle.normal.textColor = Color.white;
+            searchStyle.fontSize = 14;
+            searchStyle.fixedHeight = 25;
+
+            GUIStyle labelStyle = new GUIStyle(GUI.skin.label);
+            labelStyle.normal.textColor = Color.white;
+            labelStyle.fontSize = 12;
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Search:", labelStyle, GUILayout.Width(50));
+            
+            // Get current search text for this tab
+            string currentSearchText = searchTexts.ContainsKey(currentTab) ? searchTexts[currentTab] : "";
+            string newSearchText = GUILayout.TextField(currentSearchText, searchStyle, GUILayout.ExpandWidth(true));
+            
+            // Update search text if changed
+            if (newSearchText != currentSearchText)
+            {
+                searchTexts[currentTab] = newSearchText;
+            }
+
+            // Clear button
+            GUIStyle clearButtonStyle = new GUIStyle(GUI.skin.button);
+            clearButtonStyle.normal.background = MakeTexture(2, 2, new Color(0.3f, 0.1f, 0.1f, 1f));
+            clearButtonStyle.normal.textColor = Color.white;
+            clearButtonStyle.fontSize = 12;
+            clearButtonStyle.fixedHeight = 25;
+            clearButtonStyle.hover.background = MakeTexture(2, 2, new Color(0.4f, 0.2f, 0.2f, 1f));
+
+            if (GUILayout.Button("Clear", clearButtonStyle, GUILayout.Width(50)))
+            {
+                searchTexts[currentTab] = "";
+            }
+
+            GUILayout.EndHorizontal();
+        }
+
         private void DrawAbilityTab(PlayerAbilityType abilityType, string tabTitle)
         {
             GUIStyle headerStyle = new GUIStyle(GUI.skin.label);
@@ -212,12 +275,20 @@ namespace TheCodex
                 GUILayout.Space(10);
             }
 
-            // Get abilities for this type - use cached version
-            var abilities = GetAbilitiesForType(abilityType);
+            // Get abilities for this type - use cached version and apply search filter
+            var abilities = GetFilteredAbilities(abilityType);
             
             if (abilities.Count == 0)
             {
-                GUILayout.Label("No abilities available for this type.", GUI.skin.label);
+                string searchText = searchTexts.ContainsKey(currentTab) ? searchTexts[currentTab] : "";
+                if (!string.IsNullOrEmpty(searchText))
+                {
+                    GUILayout.Label($"No abilities found matching '{searchText}'.", GUI.skin.label);
+                }
+                else
+                {
+                    GUILayout.Label("No abilities available for this type.", GUI.skin.label);
+                }
                 return;
             }
 
@@ -281,12 +352,20 @@ namespace TheCodex
                 GUILayout.Space(10);
             }
 
-            // Get available cores - use cached version
-            var cores = GetAvailableCores();
+            // Get available cores - use cached version and apply search filter
+            var cores = GetFilteredCores();
             
             if (cores.Count == 0)
             {
-                GUILayout.Label("No cores available.", GUI.skin.label);
+                string searchText = searchTexts.ContainsKey(currentTab) ? searchTexts[currentTab] : "";
+                if (!string.IsNullOrEmpty(searchText))
+                {
+                    GUILayout.Label($"No cores found matching '{searchText}'.", GUI.skin.label);
+                }
+                else
+                {
+                    GUILayout.Label("No cores available.", GUI.skin.label);
+                }
                 return;
             }
 
@@ -345,8 +424,25 @@ namespace TheCodex
             buttonStyle.hover.background = MakeTexture(2, 2, new Color(0.35f, 0.35f, 0.35f, 1f));
             buttonStyle.active.background = buttonStyle.normal.background;
 
-            // Use the augment trees directly instead of names
-            foreach (var augment in GetAddableAugmentTrees())
+            // Get filtered augments
+            var augments = GetFilteredAugments();
+            
+            if (augments.Count == 0)
+            {
+                string searchText = searchTexts.ContainsKey(currentTab) ? searchTexts[currentTab] : "";
+                if (!string.IsNullOrEmpty(searchText))
+                {
+                    GUILayout.Label($"No augments found matching '{searchText}'.", GUI.skin.label);
+                }
+                else
+                {
+                    GUILayout.Label("No augments available.", GUI.skin.label);
+                }
+                return;
+            }
+
+            // Use the filtered augment trees
+            foreach (var augment in augments)
             {
                 string displayName = augment.Root?.Name ?? "Unnamed Augment";
                 if (GUILayout.Button(displayName, buttonStyle, GUILayout.ExpandWidth(true)))
@@ -355,6 +451,54 @@ namespace TheCodex
                     AddAugment(augment);
                 }
             }
+        }
+
+        private List<AbilityTree> GetFilteredAbilities(PlayerAbilityType abilityType)
+        {
+            var allAbilities = GetAbilitiesForType(abilityType);
+            string searchText = searchTexts.ContainsKey(currentTab) ? searchTexts[currentTab] : "";
+            
+            if (string.IsNullOrEmpty(searchText))
+            {
+                return allAbilities;
+            }
+
+            return allAbilities.Where(ability => 
+                ability.Root?.Name != null && 
+                ability.Root.Name.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0
+            ).ToList();
+        }
+
+        private List<AugmentTree> GetFilteredCores()
+        {
+            var allCores = GetAvailableCores();
+            string searchText = searchTexts.ContainsKey(currentTab) ? searchTexts[currentTab] : "";
+            
+            if (string.IsNullOrEmpty(searchText))
+            {
+                return allCores;
+            }
+
+            return allCores.Where(core => 
+                core.Root?.Name != null && 
+                core.Root.Name.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0
+            ).ToList();
+        }
+
+        private List<AugmentTree> GetFilteredAugments()
+        {
+            var allAugments = GetAddableAugmentTrees();
+            string searchText = searchTexts.ContainsKey(currentTab) ? searchTexts[currentTab] : "";
+            
+            if (string.IsNullOrEmpty(searchText))
+            {
+                return allAugments;
+            }
+
+            return allAugments.Where(augment => 
+                augment.Root?.Name != null && 
+                augment.Root.Name.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0
+            ).ToList();
         }
 
         private void AddAugment(AugmentTree augmentTree)
