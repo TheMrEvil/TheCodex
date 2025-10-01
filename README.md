@@ -1,5 +1,3 @@
-adds a menu for giving yourself any scroll in the game and the ability to set any of your abilities to any that are in the game(even unimplemented ones)
-
 ----how to use----
 
 press = (+ on numpad)
