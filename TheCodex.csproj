@@ -6,12 +6,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Compile Remove="game\**" />
-	  <EmbeddedResource Remove="game\**" />
-	  <None Remove="game\**" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<PackageReference Include="Lib.Harmony" Version="2.3.6" />
 	</ItemGroup>
 
