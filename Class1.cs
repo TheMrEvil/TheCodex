@@ -52,24 +52,24 @@ namespace TheCodex
         // Key includes width, height, and color to ensure correct texture retrieval
         private static readonly Dictionary<(int width, int height, Color color), Texture2D> textureCache = new Dictionary<(int width, int height, Color color), Texture2D>();
 
-        // Cached GUI styles
-        private GUIStyle? cachedWindowStyle;
-        private GUIStyle? cachedTabStyle;
-        private GUIStyle? cachedSelectedTabStyle;
-        private GUIStyle? cachedSearchStyle;
-        private GUIStyle? cachedClearButtonStyle;
-        private GUIStyle? cachedItemButtonStyle;
-        private GUIStyle? cachedStarButtonStyleOn;
-        private GUIStyle? cachedStarButtonStyleOff;
-        private GUIStyle? cachedHeaderStyle;
-        private GUIStyle? cachedFavoritesHeaderStyle;
-        private GUIStyle? cachedCurrentEquippedStyle;
-        private GUIStyle? cachedLabelStyle;
-        private GUIStyle? cachedToggleStyle;
-        private GUIStyle? cachedTextFieldStyle;
-        private GUIStyle? cachedApplyButtonStyle;
-        private GUIStyle? cachedAugmentButtonStyle;
-        private GUIStyle? cachedSubHeaderStyle;
+        // Cached GUI styles (initialized lazily in InitializeStyles())
+        private GUIStyle cachedWindowStyle = null!;
+        private GUIStyle cachedTabStyle = null!;
+        private GUIStyle cachedSelectedTabStyle = null!;
+        private GUIStyle cachedSearchStyle = null!;
+        private GUIStyle cachedClearButtonStyle = null!;
+        private GUIStyle cachedItemButtonStyle = null!;
+        private GUIStyle cachedStarButtonStyleOn = null!;
+        private GUIStyle cachedStarButtonStyleOff = null!;
+        private GUIStyle cachedHeaderStyle = null!;
+        private GUIStyle cachedFavoritesHeaderStyle = null!;
+        private GUIStyle cachedCurrentEquippedStyle = null!;
+        private GUIStyle cachedLabelStyle = null!;
+        private GUIStyle cachedToggleStyle = null!;
+        private GUIStyle cachedTextFieldStyle = null!;
+        private GUIStyle cachedApplyButtonStyle = null!;
+        private GUIStyle cachedAugmentButtonStyle = null!;
+        private GUIStyle cachedSubHeaderStyle = null!;
         private bool stylesInitialized = false;
 
         public enum AbilityTabType
@@ -1308,7 +1308,7 @@ namespace TheCodex
         {
             // Use cached texture if available (key includes width, height, and color)
             var cacheKey = (width, height, color);
-            if (textureCache.TryGetValue(cacheKey, out var cachedTexture) && cachedTexture != null)
+            if (textureCache.TryGetValue(cacheKey, out var cachedTexture))
             {
                 return cachedTexture;
             }
