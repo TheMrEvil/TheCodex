@@ -48,6 +48,30 @@ namespace TheCodex
         private string fontPointsInput = string.Empty;
         private int lastAutoFilledFontPoints = int.MinValue;
 
+        // Cached textures to avoid creating new ones every frame
+        // Key includes width, height, and color to ensure correct texture retrieval
+        private static readonly Dictionary<(int width, int height, Color color), Texture2D> textureCache = new Dictionary<(int width, int height, Color color), Texture2D>();
+
+        // Cached GUI styles (initialized lazily in InitializeStyles())
+        private GUIStyle cachedWindowStyle = null!;
+        private GUIStyle cachedTabStyle = null!;
+        private GUIStyle cachedSelectedTabStyle = null!;
+        private GUIStyle cachedSearchStyle = null!;
+        private GUIStyle cachedClearButtonStyle = null!;
+        private GUIStyle cachedItemButtonStyle = null!;
+        private GUIStyle cachedStarButtonStyleOn = null!;
+        private GUIStyle cachedStarButtonStyleOff = null!;
+        private GUIStyle cachedHeaderStyle = null!;
+        private GUIStyle cachedFavoritesHeaderStyle = null!;
+        private GUIStyle cachedCurrentEquippedStyle = null!;
+        private GUIStyle cachedLabelStyle = null!;
+        private GUIStyle cachedToggleStyle = null!;
+        private GUIStyle cachedTextFieldStyle = null!;
+        private GUIStyle cachedApplyButtonStyle = null!;
+        private GUIStyle cachedAugmentButtonStyle = null!;
+        private GUIStyle cachedSubHeaderStyle = null!;
+        private bool stylesInitialized = false;
+
         public enum AbilityTabType
         {
             Primary,
@@ -242,64 +266,178 @@ namespace TheCodex
             }
         }
 
+        private void InitializeStyles()
+        {
+            if (stylesInitialized) return;
+
+            // Window style
+            cachedWindowStyle = new GUIStyle(GUI.skin.window);
+            cachedWindowStyle.normal.background = MakeTexture(2, 2, new Color(0.12f, 0.12f, 0.12f, 1f));
+            cachedWindowStyle.hover.background = cachedWindowStyle.normal.background;
+            cachedWindowStyle.active.background = cachedWindowStyle.normal.background;
+            cachedWindowStyle.focused.background = cachedWindowStyle.normal.background;
+            cachedWindowStyle.onNormal.background = cachedWindowStyle.normal.background;
+            cachedWindowStyle.onHover.background = cachedWindowStyle.normal.background;
+            cachedWindowStyle.onActive.background = cachedWindowStyle.normal.background;
+            cachedWindowStyle.onFocused.background = cachedWindowStyle.normal.background;
+            cachedWindowStyle.normal.textColor = Color.white;
+            cachedWindowStyle.hover.textColor = Color.white;
+            cachedWindowStyle.active.textColor = Color.white;
+            cachedWindowStyle.focused.textColor = Color.white;
+            cachedWindowStyle.onNormal.textColor = Color.white;
+            cachedWindowStyle.onHover.textColor = Color.white;
+            cachedWindowStyle.onActive.textColor = Color.white;
+            cachedWindowStyle.onFocused.textColor = Color.white;
+
+            // Tab style
+            cachedTabStyle = new GUIStyle(GUI.skin.button);
+            cachedTabStyle.normal.background = MakeTexture(2, 2, new Color(0.2f, 0.2f, 0.2f, 1f));
+            cachedTabStyle.normal.textColor = Color.white;
+            cachedTabStyle.fontSize = 14;
+            cachedTabStyle.fixedHeight = 30;
+            cachedTabStyle.hover.background = MakeTexture(2, 2, new Color(0.3f, 0.3f, 0.3f, 1f));
+            cachedTabStyle.active.background = cachedTabStyle.normal.background;
+
+            // Selected tab style
+            cachedSelectedTabStyle = new GUIStyle(cachedTabStyle);
+            cachedSelectedTabStyle.normal.background = MakeTexture(2, 2, new Color(0.4f, 0.4f, 0.4f, 1f));
+            cachedSelectedTabStyle.normal.textColor = Color.yellow;
+            cachedSelectedTabStyle.hover.background = cachedSelectedTabStyle.normal.background;
+            cachedSelectedTabStyle.active.background = cachedSelectedTabStyle.normal.background;
+
+            // Search bar style
+            cachedSearchStyle = new GUIStyle(GUI.skin.textField);
+            cachedSearchStyle.normal.background = MakeTexture(2, 2, new Color(0.15f, 0.15f, 0.15f, 1f));
+            cachedSearchStyle.normal.textColor = Color.white;
+            cachedSearchStyle.fontSize = 14;
+            cachedSearchStyle.fixedHeight = 25;
+
+            // Label style
+            cachedLabelStyle = new GUIStyle(GUI.skin.label);
+            cachedLabelStyle.normal.textColor = Color.white;
+            cachedLabelStyle.fontSize = 12;
+
+            // Clear button style
+            cachedClearButtonStyle = new GUIStyle(GUI.skin.button);
+            cachedClearButtonStyle.normal.background = MakeTexture(2, 2, new Color(0.3f, 0.1f, 0.1f, 1f));
+            cachedClearButtonStyle.normal.textColor = Color.white;
+            cachedClearButtonStyle.fontSize = 12;
+            cachedClearButtonStyle.fixedHeight = 25;
+            cachedClearButtonStyle.hover.background = MakeTexture(2, 2, new Color(0.4f, 0.2f, 0.2f, 1f));
+
+            // Item button style
+            cachedItemButtonStyle = new GUIStyle(GUI.skin.button);
+            cachedItemButtonStyle.normal.background = MakeTexture(2, 2, new Color(0.25f, 0.25f, 0.25f, 1f));
+            cachedItemButtonStyle.normal.textColor = Color.white;
+            cachedItemButtonStyle.fontSize = 16;
+            cachedItemButtonStyle.fixedHeight = 40;
+            cachedItemButtonStyle.hover.background = MakeTexture(2, 2, new Color(0.35f, 0.35f, 0.35f, 1f));
+            cachedItemButtonStyle.active.background = cachedItemButtonStyle.normal.background;
+
+            // Star button styles
+            var starBg = MakeTexture(2, 2, new Color(0.18f, 0.18f, 0.18f, 1f));
+            
+            cachedStarButtonStyleOn = new GUIStyle(GUI.skin.button);
+            cachedStarButtonStyleOn.fontSize = 18;
+            cachedStarButtonStyleOn.fixedWidth = 36f;
+            cachedStarButtonStyleOn.fixedHeight = 40f;
+            cachedStarButtonStyleOn.alignment = TextAnchor.MiddleCenter;
+            cachedStarButtonStyleOn.normal.textColor = Color.yellow;
+            cachedStarButtonStyleOn.hover.textColor = Color.yellow;
+            cachedStarButtonStyleOn.normal.background = starBg;
+            cachedStarButtonStyleOn.hover.background = starBg;
+            cachedStarButtonStyleOn.active.background = starBg;
+
+            cachedStarButtonStyleOff = new GUIStyle(GUI.skin.button);
+            cachedStarButtonStyleOff.fontSize = 18;
+            cachedStarButtonStyleOff.fixedWidth = 36f;
+            cachedStarButtonStyleOff.fixedHeight = 40f;
+            cachedStarButtonStyleOff.alignment = TextAnchor.MiddleCenter;
+            cachedStarButtonStyleOff.normal.textColor = Color.white;
+            cachedStarButtonStyleOff.hover.textColor = Color.yellow;
+            cachedStarButtonStyleOff.normal.background = starBg;
+            cachedStarButtonStyleOff.hover.background = starBg;
+            cachedStarButtonStyleOff.active.background = starBg;
+
+            // Header style
+            cachedHeaderStyle = new GUIStyle(GUI.skin.label);
+            cachedHeaderStyle.fontSize = 18;
+            cachedHeaderStyle.normal.textColor = Color.white;
+            cachedHeaderStyle.fontStyle = FontStyle.Bold;
+
+            // Current equipped style
+            cachedCurrentEquippedStyle = new GUIStyle(GUI.skin.box);
+            cachedCurrentEquippedStyle.normal.background = MakeTexture(2, 2, new Color(0.1f, 0.3f, 0.1f, 1f));
+            cachedCurrentEquippedStyle.normal.textColor = Color.green;
+            cachedCurrentEquippedStyle.fontSize = 14;
+
+            // Toggle style
+            cachedToggleStyle = new GUIStyle(GUI.skin.toggle);
+            cachedToggleStyle.normal.textColor = Color.white;
+            cachedToggleStyle.fontSize = 14;
+
+            // Text field style for tools
+            cachedTextFieldStyle = new GUIStyle(GUI.skin.textField);
+            cachedTextFieldStyle.normal.background = MakeTexture(2, 2, new Color(0.15f, 0.15f, 0.15f, 1f));
+            cachedTextFieldStyle.normal.textColor = Color.white;
+            cachedTextFieldStyle.fontSize = 14;
+            cachedTextFieldStyle.fixedHeight = 25;
+
+            // Apply button style
+            cachedApplyButtonStyle = new GUIStyle(GUI.skin.button);
+            cachedApplyButtonStyle.normal.background = MakeTexture(2, 2, new Color(0.2f, 0.3f, 0.2f, 1f));
+            cachedApplyButtonStyle.normal.textColor = Color.white;
+            cachedApplyButtonStyle.fontSize = 14;
+            cachedApplyButtonStyle.fixedHeight = 25;
+            cachedApplyButtonStyle.hover.background = MakeTexture(2, 2, new Color(0.25f, 0.4f, 0.25f, 1f));
+
+            // Augment button style
+            cachedAugmentButtonStyle = new GUIStyle(GUI.skin.button);
+            cachedAugmentButtonStyle.normal.background = MakeTexture(2, 2, new Color(0.25f, 0.25f, 0.25f, 1f));
+            cachedAugmentButtonStyle.normal.textColor = Color.white;
+            cachedAugmentButtonStyle.fontSize = 16;
+            cachedAugmentButtonStyle.fixedHeight = 35;
+            cachedAugmentButtonStyle.hover.background = MakeTexture(2, 2, new Color(0.35f, 0.35f, 0.35f, 1f));
+            cachedAugmentButtonStyle.active.background = cachedAugmentButtonStyle.normal.background;
+
+            // Sub header style
+            cachedSubHeaderStyle = new GUIStyle(GUI.skin.label);
+            cachedSubHeaderStyle.fontSize = 16;
+            cachedSubHeaderStyle.fontStyle = FontStyle.Bold;
+            cachedSubHeaderStyle.normal.textColor = Color.white;
+
+            // Favorites header style (yellow text)
+            cachedFavoritesHeaderStyle = new GUIStyle(GUI.skin.label);
+            cachedFavoritesHeaderStyle.fontSize = 18;
+            cachedFavoritesHeaderStyle.fontStyle = FontStyle.Bold;
+            cachedFavoritesHeaderStyle.normal.textColor = Color.yellow;
+
+            stylesInitialized = true;
+        }
+
         public override void OnGUI()
         {
             if (showDropdown)
             {
+                // Initialize styles once
+                InitializeStyles();
+
                 // Prevent any mouse events from affecting the game behind the GUI
                 GUI.FocusWindow(0);
-                
-                // Solid color style for the window
-                GUIStyle windowStyle = new GUIStyle(GUI.skin.window);
-                windowStyle.normal.background = MakeTexture(2, 2, new Color(0.12f, 0.12f, 0.12f, 1f));
-                // Fix border issues by setting all states to the same background
-                windowStyle.hover.background = windowStyle.normal.background;
-                windowStyle.active.background = windowStyle.normal.background;
-                windowStyle.focused.background = windowStyle.normal.background;
-                windowStyle.onNormal.background = windowStyle.normal.background;
-                windowStyle.onHover.background = windowStyle.normal.background;
-                windowStyle.onActive.background = windowStyle.normal.background;
-                windowStyle.onFocused.background = windowStyle.normal.background;
-                // Fix title text color issues
-                windowStyle.normal.textColor = Color.white;
-                windowStyle.hover.textColor = Color.white;
-                windowStyle.active.textColor = Color.white;
-                windowStyle.focused.textColor = Color.white;
-                windowStyle.onNormal.textColor = Color.white;
-                windowStyle.onHover.textColor = Color.white;
-                windowStyle.onActive.textColor = Color.white;
-                windowStyle.onFocused.textColor = Color.white;
 
                 GUI.depth = 0;
-                windowRect = GUILayout.Window(0, windowRect, DrawWindow, "The Codex", windowStyle);
+                windowRect = GUILayout.Window(0, windowRect, DrawWindow, "The Codex", cachedWindowStyle);
             }
         }
 
         private void DrawWindow(int windowID)
         {
-            // Tab button style
-            GUIStyle tabStyle = new GUIStyle(GUI.skin.button);
-            tabStyle.normal.background = MakeTexture(2, 2, new Color(0.2f, 0.2f, 0.2f, 1f));
-            tabStyle.normal.textColor = Color.white;
-            tabStyle.fontSize = 14;
-            tabStyle.fixedHeight = 30;
-            // Fix button transparency issues
-            tabStyle.hover.background = MakeTexture(2, 2, new Color(0.3f, 0.3f, 0.3f, 1f));
-            tabStyle.active.background = tabStyle.normal.background;
-
-            // Selected tab style
-            GUIStyle selectedTabStyle = new GUIStyle(tabStyle);
-            selectedTabStyle.normal.background = MakeTexture(2, 2, new Color(0.4f, 0.4f, 0.4f, 1f));
-            selectedTabStyle.normal.textColor = Color.yellow;
-            selectedTabStyle.hover.background = selectedTabStyle.normal.background;
-            selectedTabStyle.active.background = selectedTabStyle.normal.background;
-
             // Draw tab buttons
             GUILayout.BeginHorizontal();
             for (int i = 0; i < tabNames.Length; i++)
             {
                 AbilityTabType tabType = (AbilityTabType)i;
-                GUIStyle styleToUse = (currentTab == tabType) ? selectedTabStyle : tabStyle;
+                GUIStyle styleToUse = (currentTab == tabType) ? cachedSelectedTabStyle : cachedTabStyle;
                 
                 if (GUILayout.Button(tabNames[i], styleToUse, GUILayout.ExpandWidth(true)))
                 {
@@ -356,22 +494,12 @@ namespace TheCodex
 
         private void DrawSearchBar()
         {
-            GUIStyle searchStyle = new GUIStyle(GUI.skin.textField);
-            searchStyle.normal.background = MakeTexture(2, 2, new Color(0.15f, 0.15f, 0.15f, 1f));
-            searchStyle.normal.textColor = Color.white;
-            searchStyle.fontSize = 14;
-            searchStyle.fixedHeight = 25;
-
-            GUIStyle labelStyle = new GUIStyle(GUI.skin.label);
-            labelStyle.normal.textColor = Color.white;
-            labelStyle.fontSize = 12;
-
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Search:", labelStyle, GUILayout.Width(50));
+            GUILayout.Label("Search:", cachedLabelStyle, GUILayout.Width(50));
             
             // Get current search text for this tab
             string currentSearchText = searchTexts.ContainsKey(currentTab) ? searchTexts[currentTab] : "";
-            string newSearchText = GUILayout.TextField(currentSearchText, searchStyle, GUILayout.ExpandWidth(true));
+            string newSearchText = GUILayout.TextField(currentSearchText, cachedSearchStyle, GUILayout.ExpandWidth(true));
             
             // Update search text if changed
             if (newSearchText != currentSearchText)
@@ -379,15 +507,7 @@ namespace TheCodex
                 searchTexts[currentTab] = newSearchText;
             }
 
-            // Clear button
-            GUIStyle clearButtonStyle = new GUIStyle(GUI.skin.button);
-            clearButtonStyle.normal.background = MakeTexture(2, 2, new Color(0.3f, 0.1f, 0.1f, 1f));
-            clearButtonStyle.normal.textColor = Color.white;
-            clearButtonStyle.fontSize = 12;
-            clearButtonStyle.fixedHeight = 25;
-            clearButtonStyle.hover.background = MakeTexture(2, 2, new Color(0.4f, 0.2f, 0.2f, 1f));
-
-            if (GUILayout.Button("Clear", clearButtonStyle, GUILayout.Width(50)))
+            if (GUILayout.Button("Clear", cachedClearButtonStyle, GUILayout.Width(50)))
             {
                 searchTexts[currentTab] = "";
             }
@@ -397,54 +517,25 @@ namespace TheCodex
 
         private GUIStyle BuildItemButtonStyle()
         {
-            GUIStyle buttonStyle = new GUIStyle(GUI.skin.button);
-            buttonStyle.normal.background = MakeTexture(2, 2, new Color(0.25f, 0.25f, 0.25f, 1f));
-            buttonStyle.normal.textColor = Color.white;
-            buttonStyle.fontSize = 16;
-            buttonStyle.fixedHeight = 40;
-            // Fix button transparency issues
-            buttonStyle.hover.background = MakeTexture(2, 2, new Color(0.35f, 0.35f, 0.35f, 1f));
-            buttonStyle.active.background = buttonStyle.normal.background;
-            return buttonStyle;
+            return cachedItemButtonStyle;
         }
 
         private GUIStyle BuildStarButtonStyle(bool isOn)
         {
-            GUIStyle starStyle = new GUIStyle(GUI.skin.button);
-            starStyle.fontSize = 18;
-            starStyle.fixedWidth = 36f;
-            starStyle.fixedHeight = 40f;
-            starStyle.alignment = TextAnchor.MiddleCenter;
-            starStyle.normal.textColor = isOn ? Color.yellow : Color.white;
-            starStyle.hover.textColor = Color.yellow;
-            var bg = MakeTexture(2, 2, new Color(0.18f, 0.18f, 0.18f, 1f));
-            starStyle.normal.background = bg;
-            starStyle.hover.background = bg;
-            starStyle.active.background = bg;
-            return starStyle;
+            return isOn ? cachedStarButtonStyleOn : cachedStarButtonStyleOff;
         }
 
         private void DrawAbilityTab(PlayerAbilityType abilityType, string tabTitle)
         {
-            GUIStyle headerStyle = new GUIStyle(GUI.skin.label);
-            headerStyle.fontSize = 18;
-            headerStyle.normal.textColor = Color.white;
-            headerStyle.fontStyle = FontStyle.Bold;
-
-            GUILayout.Label(tabTitle, headerStyle);
+            GUILayout.Label(tabTitle, cachedHeaderStyle);
             GUILayout.Space(10);
 
             // Show current equipped ability
             var currentAbility = GetCurrentAbility(abilityType);
             if (currentAbility != null)
             {
-                GUIStyle currentStyle = new GUIStyle(GUI.skin.box);
-                currentStyle.normal.background = MakeTexture(2, 2, new Color(0.1f, 0.3f, 0.1f, 1f));
-                currentStyle.normal.textColor = Color.green;
-                currentStyle.fontSize = 14;
-                
-                GUILayout.BeginVertical(currentStyle);
-                GUILayout.Label($"Currently Equipped: {currentAbility.Root.Name}", currentStyle);
+                GUILayout.BeginVertical(cachedCurrentEquippedStyle);
+                GUILayout.Label($"Currently Equipped: {currentAbility.Root.Name}", cachedCurrentEquippedStyle);
                 GUILayout.EndVertical();
                 GUILayout.Space(10);
             }
@@ -507,25 +598,15 @@ namespace TheCodex
 
         private void DrawCoreTab()
         {
-            GUIStyle headerStyle = new GUIStyle(GUI.skin.label);
-            headerStyle.fontSize = 18;
-            headerStyle.normal.textColor = Color.white;
-            headerStyle.fontStyle = FontStyle.Bold;
-
-            GUILayout.Label("Core Selection", headerStyle);
+            GUILayout.Label("Core Selection", cachedHeaderStyle);
             GUILayout.Space(10);
 
             // Show current equipped core
             var currentCore = GetCurrentCore();
             if (currentCore != null)
             {
-                GUIStyle currentStyle = new GUIStyle(GUI.skin.box);
-                currentStyle.normal.background = MakeTexture(2, 2, new Color(0.1f, 0.3f, 0.1f, 1f));
-                currentStyle.normal.textColor = Color.green;
-                currentStyle.fontSize = 14;
-                
-                GUILayout.BeginVertical(currentStyle);
-                GUILayout.Label($"Currently Equipped: {currentCore.Root.Name}", currentStyle);
+                GUILayout.BeginVertical(cachedCurrentEquippedStyle);
+                GUILayout.Label($"Currently Equipped: {currentCore.Root.Name}", cachedCurrentEquippedStyle);
                 GUILayout.EndVertical();
                 GUILayout.Space(10);
             }
@@ -586,23 +667,8 @@ namespace TheCodex
 
         private void DrawAllAugmentsTab()
         {
-            GUIStyle headerStyle = new GUIStyle(GUI.skin.label);
-            headerStyle.fontSize = 18;
-            headerStyle.normal.textColor = Color.white;
-            headerStyle.fontStyle = FontStyle.Bold;
-
-            GUILayout.Label("All Augments", headerStyle);
+            GUILayout.Label("All Augments", cachedHeaderStyle);
             GUILayout.Space(10);
-
-            // Button style for augments
-            GUIStyle buttonStyle = new GUIStyle(GUI.skin.button);
-            buttonStyle.normal.background = MakeTexture(2, 2, new Color(0.25f, 0.25f, 0.25f, 1f));
-            buttonStyle.normal.textColor = Color.white;
-            buttonStyle.fontSize = 16;
-            buttonStyle.fixedHeight = 35;
-            // Fix button transparency issues
-            buttonStyle.hover.background = MakeTexture(2, 2, new Color(0.35f, 0.35f, 0.35f, 1f));
-            buttonStyle.active.background = buttonStyle.normal.background;
 
             // Get filtered augments
             var augments = GetFilteredAugments();
@@ -633,7 +699,7 @@ namespace TheCodex
                     ToggleFavoriteAugment(augment);
                 }
 
-                if (GUILayout.Button(displayName, buttonStyle, GUILayout.ExpandWidth(true)))
+                if (GUILayout.Button(displayName, cachedAugmentButtonStyle, GUILayout.ExpandWidth(true)))
                 {
                     MelonLogger.Msg($"Adding augment: {displayName} (ID: {augment.ID})");
                     AddAugment(augment);
@@ -644,12 +710,7 @@ namespace TheCodex
 
         private void DrawFavoritesTab()
         {
-            GUIStyle headerStyle = new GUIStyle(GUI.skin.label);
-            headerStyle.fontSize = 18;
-            headerStyle.normal.textColor = Color.yellow;
-            headerStyle.fontStyle = FontStyle.Bold;
-
-            GUILayout.Label("Favorites", headerStyle);
+            GUILayout.Label("Favorites", cachedFavoritesHeaderStyle);
             GUILayout.Space(10);
 
             string filter = searchTexts.ContainsKey(AbilityTabType.Favorites) ? searchTexts[AbilityTabType.Favorites] : "";
@@ -662,9 +723,7 @@ namespace TheCodex
                 var favs = all.Where(a => IsFavoriteAbility(type, a) && HasFilter(a.Root.Name)).ToList();
                 if (favs.Count == 0) return;
 
-                GUIStyle subHeader = new GUIStyle(GUI.skin.label) { fontSize = 16, fontStyle = FontStyle.Bold };
-                subHeader.normal.textColor = Color.white;
-                GUILayout.Label(title, subHeader);
+                GUILayout.Label(title, cachedSubHeaderStyle);
 
                 var current = GetCurrentAbility(type);
                 GUIStyle buttonStyle = BuildItemButtonStyle();
@@ -701,9 +760,7 @@ namespace TheCodex
             var coreList = GetAvailableCores().Where(c => IsFavoriteCore(c) && HasFilter(c.Root.Name)).ToList();
             if (coreList.Count > 0)
             {
-                GUIStyle subHeader = new GUIStyle(GUI.skin.label) { fontSize = 16, fontStyle = FontStyle.Bold };
-                subHeader.normal.textColor = Color.white;
-                GUILayout.Label("Cores", subHeader);
+                GUILayout.Label("Cores", cachedSubHeaderStyle);
 
                 var currentCore = GetCurrentCore();
                 GUIStyle buttonStyle = BuildItemButtonStyle();
@@ -735,17 +792,7 @@ namespace TheCodex
             var augmentList = GetAddableAugmentTrees().Where(a => IsFavoriteAugment(a) && HasFilter(a.Root.Name)).ToList();
             if (augmentList.Count > 0)
             {
-                GUIStyle subHeader = new GUIStyle(GUI.skin.label) { fontSize = 16, fontStyle = FontStyle.Bold };
-                subHeader.normal.textColor = Color.white;
-                GUILayout.Label("Augments", subHeader);
-
-                GUIStyle buttonStyle = new GUIStyle(GUI.skin.button);
-                buttonStyle.normal.background = MakeTexture(2, 2, new Color(0.25f, 0.25f, 0.25f, 1f));
-                buttonStyle.normal.textColor = Color.white;
-                buttonStyle.fontSize = 16;
-                buttonStyle.fixedHeight = 35;
-                buttonStyle.hover.background = MakeTexture(2, 2, new Color(0.35f, 0.35f, 0.35f, 1f));
-                buttonStyle.active.background = buttonStyle.normal.background;
+                GUILayout.Label("Augments", cachedSubHeaderStyle);
 
                 foreach (var aug in augmentList)
                 {
@@ -757,7 +804,7 @@ namespace TheCodex
                         ToggleFavoriteAugment(aug); // un-favorite
                     }
 
-                    if (GUILayout.Button(name, buttonStyle, GUILayout.ExpandWidth(true)))
+                    if (GUILayout.Button(name, cachedAugmentButtonStyle, GUILayout.ExpandWidth(true)))
                     {
                         MelonLogger.Msg($"Adding augment: {name} (ID: {aug.ID})");
                         AddAugment(aug);
@@ -769,22 +816,13 @@ namespace TheCodex
 
         private void DrawToolsTab()
         {
-            GUIStyle headerStyle = new GUIStyle(GUI.skin.label);
-            headerStyle.fontSize = 18;
-            headerStyle.normal.textColor = Color.white;
-            headerStyle.fontStyle = FontStyle.Bold;
-
-            GUIStyle toggleStyle = new GUIStyle(GUI.skin.toggle);
-            toggleStyle.normal.textColor = Color.white;
-            toggleStyle.fontSize = 14;
-
-            GUILayout.Label("Tools", headerStyle);
+            GUILayout.Label("Tools", cachedHeaderStyle);
             GUILayout.Space(10);
 
-            noClipEnabled = GUILayout.Toggle(noClipEnabled, "No Clip", toggleStyle);
-            godModeEnabled = GUILayout.Toggle(godModeEnabled, "God Mode", toggleStyle);
-            infiniteManaEnabled = GUILayout.Toggle(infiniteManaEnabled, "Infinite Mana", toggleStyle);
-            blockPlayerAugmentsEnabled = GUILayout.Toggle(blockPlayerAugmentsEnabled, "Block Player Pages", toggleStyle);
+            noClipEnabled = GUILayout.Toggle(noClipEnabled, "No Clip", cachedToggleStyle);
+            godModeEnabled = GUILayout.Toggle(godModeEnabled, "God Mode", cachedToggleStyle);
+            infiniteManaEnabled = GUILayout.Toggle(infiniteManaEnabled, "Infinite Mana", cachedToggleStyle);
+            blockPlayerAugmentsEnabled = GUILayout.Toggle(blockPlayerAugmentsEnabled, "Block Player Pages", cachedToggleStyle);
 
             GUILayout.Space(10);
 
@@ -809,29 +847,12 @@ namespace TheCodex
                     lastAutoFilledRerolls = currentRemaining;
                 }
 
-                GUIStyle label = new GUIStyle(GUI.skin.label);
-                label.normal.textColor = Color.white;
-                label.fontSize = 14;
-
-                GUIStyle textField = new GUIStyle(GUI.skin.textField);
-                textField.normal.background = MakeTexture(2, 2, new Color(0.15f, 0.15f, 0.15f, 1f));
-                textField.normal.textColor = Color.white;
-                textField.fontSize = 14;
-                textField.fixedHeight = 25;
-
-                GUIStyle applyBtn = new GUIStyle(GUI.skin.button);
-                applyBtn.normal.background = MakeTexture(2, 2, new Color(0.2f, 0.3f, 0.2f, 1f));
-                applyBtn.normal.textColor = Color.white;
-                applyBtn.fontSize = 14;
-                applyBtn.fixedHeight = 25;
-                applyBtn.hover.background = MakeTexture(2, 2, new Color(0.25f, 0.4f, 0.25f, 1f));
-
                 GUILayout.BeginHorizontal();
-                GUILayout.Label("Rerolls:", label, GUILayout.Width(70));
+                GUILayout.Label("Rerolls:", cachedLabelStyle, GUILayout.Width(70));
                 GUI.SetNextControlName(controlName);
-                rerollsInput = GUILayout.TextField(rerollsInput ?? string.Empty, textField, GUILayout.ExpandWidth(true));
+                rerollsInput = GUILayout.TextField(rerollsInput ?? string.Empty, cachedTextFieldStyle, GUILayout.ExpandWidth(true));
 
-                if (GUILayout.Button("Apply", applyBtn, GUILayout.Width(70)))
+                if (GUILayout.Button("Apply", cachedApplyButtonStyle, GUILayout.Width(70)))
                 {
                     if (int.TryParse(rerollsInput, out int desiredRemaining))
                     {
@@ -865,11 +886,11 @@ namespace TheCodex
                     }
 
                     GUILayout.BeginHorizontal();
-                    GUILayout.Label("Font Points:", label, GUILayout.Width(90));
+                    GUILayout.Label("Font Points:", cachedLabelStyle, GUILayout.Width(90));
                     GUI.SetNextControlName(fpControlName);
-                    fontPointsInput = GUILayout.TextField(fontPointsInput ?? string.Empty, textField, GUILayout.ExpandWidth(true));
+                    fontPointsInput = GUILayout.TextField(fontPointsInput ?? string.Empty, cachedTextFieldStyle, GUILayout.ExpandWidth(true));
 
-                    if (GUILayout.Button("Apply", applyBtn, GUILayout.Width(70)))
+                    if (GUILayout.Button("Apply", cachedApplyButtonStyle, GUILayout.Width(70)))
                     {
                         if (int.TryParse(fontPointsInput, out int desiredPoints))
                         {
@@ -1285,6 +1306,13 @@ namespace TheCodex
 
         private Texture2D MakeTexture(int width, int height, Color color)
         {
+            // Use cached texture if available (key includes width, height, and color)
+            var cacheKey = (width, height, color);
+            if (textureCache.TryGetValue(cacheKey, out var cachedTexture))
+            {
+                return cachedTexture;
+            }
+
             Color[] pixels = new Color[width * height];
             for (int i = 0; i < pixels.Length; i++)
             {
@@ -1293,6 +1321,9 @@ namespace TheCodex
             Texture2D texture = new Texture2D(width, height);
             texture.SetPixels(pixels);
             texture.Apply();
+            
+            // Cache the texture
+            textureCache[cacheKey] = texture;
             return texture;
         }
 
