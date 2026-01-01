@@ -25,6 +25,7 @@ namespace TheCodex
         // Cache the full ability lists to prevent them from being overwritten
         private static readonly Dictionary<PlayerAbilityType, List<AbilityTree>> cachedFullAbilityLists = new Dictionary<PlayerAbilityType, List<AbilityTree>>();
         private static readonly List<AugmentTree> cachedFullCoreList = new List<AugmentTree>();
+        private static readonly List<AugmentTree> cachedFullAugmentList = new List<AugmentTree>();
         private static bool hasInitializedCache = false;
 
         // Favorites persistence
@@ -234,8 +235,6 @@ namespace TheCodex
         {
             try
             {
-                MelonLogger.Msg("Initializing ability cache...");
-                
                 // Cache all ability types
                 var abilityTypes = new PlayerAbilityType[] 
                 { 
@@ -249,14 +248,17 @@ namespace TheCodex
                 {
                     var abilities = GetAbilitiesForTypeInternal(abilityType);
                     cachedFullAbilityLists[abilityType] = new List<AbilityTree>(abilities);
-                    MelonLogger.Msg($"Cached {abilities.Count} abilities for type {abilityType}");
                 }
 
                 // Cache cores
                 var cores = GetAvailableCoresInternal();
                 cachedFullCoreList.Clear();
                 cachedFullCoreList.AddRange(cores);
-                MelonLogger.Msg($"Cached {cores.Count} cores");
+
+                // Cache augments
+                var augments = GetAddableAugmentTreesInternal();
+                cachedFullAugmentList.Clear();
+                cachedFullAugmentList.AddRange(augments);
 
                 hasInitializedCache = true;
             }
@@ -1049,8 +1051,18 @@ namespace TheCodex
             }
         }
 
-        // Get all addable augments as AugmentTree objects instead of name strings
+        // Get all addable augments as AugmentTree objects - uses cache if available
         private List<AugmentTree> GetAddableAugmentTrees()
+        {
+            if (hasInitializedCache && cachedFullAugmentList.Count > 0)
+            {
+                return cachedFullAugmentList;
+            }
+            return GetAddableAugmentTreesInternal();
+        }
+
+        // Internal method that always fetches fresh augment data
+        private List<AugmentTree> GetAddableAugmentTreesInternal()
         {
             var augments = new List<AugmentTree>();
             try
@@ -1152,17 +1164,14 @@ namespace TheCodex
                                 {
                                     // Get the core field from CoreDisplay
                                     var coreField = coreDisplayObj.GetType().GetField("core", BindingFlags.Public | BindingFlags.Instance);
-                                    var colorField = coreDisplayObj.GetType().GetField("color", BindingFlags.Public | BindingFlags.Instance);
                                     
-                                    if (coreField != null && colorField != null)
+                                    if (coreField != null)
                                     {
                                         var core = coreField.GetValue(coreDisplayObj) as AugmentTree;
-                                        var color = colorField.GetValue(coreDisplayObj);
                                         
                                         if (core != null)
                                         {
                                             cores.Add(core);
-                                            MelonLogger.Msg($"Found core: {core.Root.Name} (Color: {color})");
                                         }
                                     }
                                 }
@@ -1174,8 +1183,6 @@ namespace TheCodex
                 // Alternative approach: Use the static GetCore method with known MagicColor values
                 if (cores.Count == 0)
                 {
-                    MelonLogger.Msg("Reflection approach failed, trying static method approach...");
-                    
                     var magicColors = new MagicColor[] 
                     { 
                         MagicColor.Red, MagicColor.Yellow, MagicColor.Green, MagicColor.Blue,
@@ -1190,12 +1197,12 @@ namespace TheCodex
                             if (coreDisplay?.core != null)
                             {
                                 cores.Add(coreDisplay.core);
-                                MelonLogger.Msg($"Found core via static method: {coreDisplay.core.Root.Name} (Color: {color})");
                             }
                         }
-                        catch (Exception ex)
+                        catch (Exception)
                         {
-                            MelonLogger.Warning($"Failed to get core for color {color}: {ex.Message}");
+                            // Silently ignore failures for individual color lookups
+                            // This is expected to fail for some colors that don't have cores
                         }
                     }
                 }
@@ -1356,7 +1363,6 @@ namespace TheCodex
                     favorites.Add(token);
                 }
                 favoritesLoaded = true;
-                MelonLogger.Msg($"Loaded {favorites.Count} favorites");
             }
             catch (Exception ex)
             {
