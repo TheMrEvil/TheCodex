@@ -49,7 +49,8 @@ namespace TheCodex
         private int lastAutoFilledFontPoints = int.MinValue;
 
         // Cached textures to avoid creating new ones every frame
-        private static readonly Dictionary<Color, Texture2D> textureCache = new Dictionary<Color, Texture2D>();
+        // Key includes width, height, and color to ensure correct texture retrieval
+        private static readonly Dictionary<(int width, int height, Color color), Texture2D> textureCache = new Dictionary<(int width, int height, Color color), Texture2D>();
 
         // Cached GUI styles
         private GUIStyle? cachedWindowStyle;
@@ -61,6 +62,7 @@ namespace TheCodex
         private GUIStyle? cachedStarButtonStyleOn;
         private GUIStyle? cachedStarButtonStyleOff;
         private GUIStyle? cachedHeaderStyle;
+        private GUIStyle? cachedFavoritesHeaderStyle;
         private GUIStyle? cachedCurrentEquippedStyle;
         private GUIStyle? cachedLabelStyle;
         private GUIStyle? cachedToggleStyle;
@@ -404,6 +406,12 @@ namespace TheCodex
             cachedSubHeaderStyle.fontStyle = FontStyle.Bold;
             cachedSubHeaderStyle.normal.textColor = Color.white;
 
+            // Favorites header style (yellow text)
+            cachedFavoritesHeaderStyle = new GUIStyle(GUI.skin.label);
+            cachedFavoritesHeaderStyle.fontSize = 18;
+            cachedFavoritesHeaderStyle.fontStyle = FontStyle.Bold;
+            cachedFavoritesHeaderStyle.normal.textColor = Color.yellow;
+
             stylesInitialized = true;
         }
 
@@ -436,7 +444,7 @@ namespace TheCodex
                     currentTab = tabType;
                 }
             }
-            GUILayout.EndHorizontal();;
+            GUILayout.EndHorizontal();
 
             GUILayout.Space(10);
 
@@ -528,7 +536,7 @@ namespace TheCodex
             {
                 GUILayout.BeginVertical(cachedCurrentEquippedStyle);
                 GUILayout.Label($"Currently Equipped: {currentAbility.Root.Name}", cachedCurrentEquippedStyle);
-                GUILayout.EndVertical();;
+                GUILayout.EndVertical();
                 GUILayout.Space(10);
             }
 
@@ -702,11 +710,7 @@ namespace TheCodex
 
         private void DrawFavoritesTab()
         {
-            // Use cached header style but with yellow color for favorites
-            GUIStyle favHeaderStyle = new GUIStyle(cachedHeaderStyle);
-            favHeaderStyle.normal.textColor = Color.yellow;
-
-            GUILayout.Label("Favorites", favHeaderStyle);
+            GUILayout.Label("Favorites", cachedFavoritesHeaderStyle);
             GUILayout.Space(10);
 
             string filter = searchTexts.ContainsKey(AbilityTabType.Favorites) ? searchTexts[AbilityTabType.Favorites] : "";
@@ -1302,8 +1306,9 @@ namespace TheCodex
 
         private Texture2D MakeTexture(int width, int height, Color color)
         {
-            // Use cached texture if available
-            if (textureCache.TryGetValue(color, out var cachedTexture) && cachedTexture != null)
+            // Use cached texture if available (key includes width, height, and color)
+            var cacheKey = (width, height, color);
+            if (textureCache.TryGetValue(cacheKey, out var cachedTexture) && cachedTexture != null)
             {
                 return cachedTexture;
             }
@@ -1318,7 +1323,7 @@ namespace TheCodex
             texture.Apply();
             
             // Cache the texture
-            textureCache[color] = texture;
+            textureCache[cacheKey] = texture;
             return texture;
         }
 
